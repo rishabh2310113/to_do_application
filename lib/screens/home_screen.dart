@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -11,145 +12,141 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
+  TextEditingController _toDoController = TextEditingController();
 
-  void logOut() async{
-
+  void logOut() async {
     await FirebaseAuth.instance.signOut();
-     Navigator.popUntil(context, (route)=>route.isFirst);
-     Navigator.pushReplacement(context, CupertinoPageRoute(builder: (context) => LoginScreen()));
+    Navigator.popUntil(context, (route) => route.isFirst);
+    Navigator.pushReplacement(context, CupertinoPageRoute(builder: (context) => LoginScreen()));
   }
+
+  void _addToDoItem() {
+    String task = _toDoController.text.trim();
+    if (task.isNotEmpty) {
+      Map<String, dynamic> userTask = {
+        "task": task,
+        "timestamp": FieldValue.serverTimestamp(),
+      };
+      FirebaseFirestore.instance.collection("users").add(userTask);
+      _toDoController.clear();
+    }
+  }
+
+  void _deleteTask(String docId) {
+    FirebaseFirestore.instance.collection("users").doc(docId).delete();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-         appBar: AppBar(
-          title: Text("Home"),
-          actions: [
-            IconButton(
-              onPressed: (){
-                logOut();
-              },
-               icon: Icon(Icons.exit_to_app),
-               )
+      appBar: AppBar(
+        title: const Text(
+          "To-Do List",
+          style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.blueAccent,
+        actions: [
+          IconButton(
+            onPressed: logOut,
+            icon: const Icon(Icons.exit_to_app, color: Colors.white),
+          ),
+        ],
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _toDoController,
+                    decoration: InputDecoration(
+                      labelText: 'Enter a task',
+                      labelStyle: TextStyle(color: Colors.blueAccent),
+                      filled: true,
+                      fillColor: Colors.grey[200],
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: Colors.blueAccent),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: BorderSide(color: Colors.blueAccent, width: 2),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton(
+                  onPressed: _addToDoItem,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blueAccent,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                  ),
+                  child: const Text(
+                    "Add",
+                    style: TextStyle(fontSize: 16, color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+
+            // Expanded StreamBuilder to show tasks list
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance.collection("users").orderBy("timestamp").snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.active) {
+                    if (snapshot.hasData && snapshot.data != null) {
+                      return ListView.builder(
+                        itemCount: snapshot.data!.docs.length,
+                        itemBuilder: (context, index) {
+                          Map<String, dynamic> userMap = snapshot.data!.docs[index].data() as Map<String, dynamic>;
+                          return Card(
+                            color: Colors.grey[100],
+                            margin: const EdgeInsets.symmetric(vertical: 5),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: ListTile(
+                              title: Text(
+                                userMap["task"] ?? "No Task",
+                                style: TextStyle(fontSize: 18, color: Colors.blueGrey[800]),
+                              ),
+                              trailing: IconButton(
+                                onPressed: () {
+                                  _deleteTask(snapshot.data!.docs[index].id);
+                                },
+                                icon: Icon(Icons.delete, color: Colors.redAccent),
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    } else {
+                      return const Center(
+                        child: Text(
+                          "No tasks added yet!",
+                          style: TextStyle(fontSize: 18, color: Colors.grey),
+                        ),
+                      );
+                    }
+                  } else {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                },
+              ),
+            ),
           ],
-         ),
+        ),
+      ),
     );
   }
 }
 
-// import 'package:flutter/material.dart';
 
-// void main() {
-//   runApp(MyApp());
-// }
-
-// class MyApp extends StatelessWidget {
-//   @override
-//   Widget build(BuildContext context) {
-//     return MaterialApp(
-//       title: 'Simple To-Do App',
-//       theme: ThemeData(
-//         primarySwatch: Colors.blue,
-//       ),
-//       home: TodoApp(),
-//     );
-//   }
-// }
-
-// class TodoApp extends StatefulWidget {
-//   @override
-//   _TodoAppState createState() => _TodoAppState();
-// }
-
-// class _TodoAppState extends State<TodoApp> {
-//   final TextEditingController _taskController = TextEditingController();
-//   List<String> _tasks = [];
-//   List<bool> _completed = [];
-
-//   // Function to add a new task
-//   void _addTask() {
-//     if (_taskController.text.isNotEmpty) {
-//       setState(() {
-//         _tasks.add(_taskController.text);
-//         _completed.add(false); // By default, the task is not completed
-//       });
-//       _taskController.clear();
-//     }
-//   }
-
-//   // Function to remove a task
-//   void _removeTask(int index) {
-//     setState(() {
-//       _tasks.removeAt(index);
-//       _completed.removeAt(index);
-//     });
-//   }
-
-//   // Function to mark a task as completed
-//   void _toggleCompletion(int index) {
-//     setState(() {
-//       _completed[index] = !_completed[index];
-//     });
-//   }
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(
-//         title: Text('To-Do App'),
-//       ),
-//       body: Padding(
-//         padding: const EdgeInsets.all(16.0),
-//         child: Column(
-//           children: <Widget>[
-//             TextField(
-//               controller: _taskController,
-//               decoration: InputDecoration(
-//                 labelText: 'Enter a task',
-//                 border: OutlineInputBorder(),
-//               ),
-//             ),
-//             SizedBox(height: 10),
-//             ElevatedButton(
-//               onPressed: _addTask,
-//               child: Text('Add Task'),
-//             ),
-//             Expanded(
-//               child: ListView.builder(
-//                 itemCount: _tasks.length,
-//                 itemBuilder: (context, index) {
-//                   return ListTile(
-//                     title: Text(
-//                       _tasks[index],
-//                       style: TextStyle(
-//                         decoration: _completed[index]
-//                             ? TextDecoration.lineThrough
-//                             : TextDecoration.none,
-//                       ),
-//                     ),
-//                     trailing: Row(
-//                       mainAxisSize: MainAxisSize.min,
-//                       children: [
-//                         IconButton(
-//                           icon: Icon(
-//                             _completed[index]
-//                                 ? Icons.check_box
-//                                 : Icons.check_box_outline_blank,
-//                           ),
-//                           onPressed: () => _toggleCompletion(index),
-//                         ),
-//                         IconButton(
-//                           icon: Icon(Icons.delete),
-//                           onPressed: () => _removeTask(index),
-//                         ),
-//                       ],
-//                     ),
-//                   );
-//                 },
-//               ),
-//             ),
-//           ],
-//         ),
-//       ),
-//     );
-//   }
-// }
