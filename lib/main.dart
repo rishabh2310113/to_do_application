@@ -6,9 +6,9 @@ import 'package:to_do_application/screens/email_auth/login_screen.dart';
 import 'package:to_do_application/screens/home_screen.dart';
 
 void main() async{
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+  WidgetsFlutterBinding.ensureInitialized();    // flutter app se relsted saari config initialised 
+  await Firebase.initializeApp(    // to connect to firebase  
+    options: DefaultFirebaseOptions.currentPlatform,  // ios and andriod wali settings accordingly
   );
   runApp(MyApp());
 }

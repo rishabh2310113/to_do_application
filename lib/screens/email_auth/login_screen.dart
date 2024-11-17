@@ -67,7 +67,7 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
+              const Text(
                 "Welcome Back!",
                 style: TextStyle(
                   fontSize: 28,
@@ -81,12 +81,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 controller: emailController,
                 decoration: InputDecoration(
                   labelText: "Email Address",
-                  labelStyle: TextStyle(color: Colors.blueAccent),
+                  labelStyle: const TextStyle(color: Colors.blueAccent),
                   filled: true,
                   fillColor: Colors.grey[200],
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: Colors.blueAccent),
+                    borderSide: const BorderSide(color: Colors.blueAccent),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),

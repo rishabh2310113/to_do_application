@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:to_do_application/screens/email_auth/login_screen.dart';
+import 'package:intl/intl.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -13,6 +14,9 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   TextEditingController _toDoController = TextEditingController();
+  TextEditingController _searchController = TextEditingController();
+  String _searchQuery = "";
+  final DateTime _currentDate = DateTime.now();
 
   void logOut() async {
     await FirebaseAuth.instance.signOut();
@@ -36,6 +40,12 @@ class _HomeScreenState extends State<HomeScreen> {
     FirebaseFirestore.instance.collection("users").doc(docId).delete();
   }
 
+  void _filterTasks(String query) {
+    setState(() {
+      _searchQuery = query.toLowerCase();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -56,6 +66,35 @@ class _HomeScreenState extends State<HomeScreen> {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           children: [
+            // Display current date
+            Text(
+              DateFormat('EEEE, MMMM d, yyyy').format(_currentDate),
+              style: TextStyle(fontSize: 18, color: Colors.blueGrey),
+            ),
+            const SizedBox(height: 20),
+
+            // Search Bar
+            TextField(
+              controller: _searchController,
+              onChanged: _filterTasks,
+              decoration: InputDecoration(
+                labelText: 'Search tasks',
+                prefixIcon: Icon(Icons.search, color: Colors.blueAccent),
+                filled: true,
+                fillColor: Colors.grey[200],
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.blueAccent),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: Colors.blueAccent, width: 2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Add Task Bar
             Row(
               children: [
                 Expanded(
@@ -103,10 +142,25 @@ class _HomeScreenState extends State<HomeScreen> {
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.active) {
                     if (snapshot.hasData && snapshot.data != null) {
+                      final filteredDocs = snapshot.data!.docs.where((doc) {
+                        final data = doc.data() as Map<String, dynamic>;
+                        final task = data["task"] ?? "";
+                        return task.toLowerCase().contains(_searchQuery);
+                      }).toList();
+
+                      if (filteredDocs.isEmpty) {
+                        return const Center(
+                          child: Text(
+                            "No matching tasks found!",
+                            style: TextStyle(fontSize: 18, color: Colors.grey),
+                          ),
+                        );
+                      }
+
                       return ListView.builder(
-                        itemCount: snapshot.data!.docs.length,
+                        itemCount: filteredDocs.length,
                         itemBuilder: (context, index) {
-                          Map<String, dynamic> userMap = snapshot.data!.docs[index].data() as Map<String, dynamic>;
+                          Map<String, dynamic> userMap = filteredDocs[index].data() as Map<String, dynamic>;
                           return Card(
                             color: Colors.grey[100],
                             margin: const EdgeInsets.symmetric(vertical: 5),
@@ -120,7 +174,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                               trailing: IconButton(
                                 onPressed: () {
-                                  _deleteTask(snapshot.data!.docs[index].id);
+                                  _deleteTask(filteredDocs[index].id);
                                 },
                                 icon: Icon(Icons.delete, color: Colors.redAccent),
                               ),
@@ -147,6 +201,4 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
-}
-
-
+} 

@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:to_do_application/screens/home_screen.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -39,7 +40,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
         UserCredential userCredential = await FirebaseAuth.instance
             .createUserWithEmailAndPassword(email: email, password: password);
         if (userCredential.user != null) {
-          Navigator.pop(context);
+          Navigator.push(context, CupertinoPageRoute(builder: (context) => HomeScreen()));
         }
       } on FirebaseAuthException catch (ex) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -72,7 +73,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
+              const Text(
                 "Get Started!",
                 style: TextStyle(
                   fontSize: 28,
